@@ -12,9 +12,9 @@
     self.sendData = function (data) {
         if (self.socket.readyState == WebSocket.OPEN) {
             self.socket.send(data);
-            console.log("send:", data);
+           // console.log("send:", data);
         } else {
-            console.log("error-sedning data", self.socket.readyState);
+            //console.log("error-sedning data", self.socket.readyState);
         }
     }
 
@@ -25,9 +25,10 @@
             console.log("Socket Connected: ", self.connectionUrl);
         };
         self.socket.onclose = function (event) {
+            console.log(event);
             console.log("Socket Disconnected: ", self.connectionUrl);
         };
-        //socket.onerror = updateState;
+        self.socket.onerror=function (evt) {console.log(evt);}
         self.socket.onmessage = function (event) {
             console.log("rec: ", event.data);
             self.onMessage(event.data);

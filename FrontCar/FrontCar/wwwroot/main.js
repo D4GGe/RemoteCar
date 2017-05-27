@@ -27,14 +27,15 @@ $(document).ready(function () {
         });
         setInterval(function () {
             var gp = navigator.getGamepads()[0];
-            console.log(navigator.getGamepads());
+            /*console.log(navigator.getGamepads()[2]);
+            return;*/
             var black = 255 - (Math.round(gp.buttons[7].value * 255));
             var blue = black - (Math.round(gp.buttons[6].value * 255));
             if (blue < 0) {
                 blue = 0;
             }
 
-            console.log("rgba(" + blue + "," + blue + "," + black + ", 1)")
+            //console.log("rgba(" + blue + "," + blue + "," + black + ", 1)")
 
             ctx.fillStyle = "rgba(" + blue + "," + blue + "," + black + ", 1)";
             ctx.fillRect(0, 0, 1010, 1010);
@@ -46,12 +47,18 @@ $(document).ready(function () {
                 LeftPad: { x: Math.round(gp.axes[0] * 1000), y: Math.round(gp.axes[1] * 1000) },
                 RightPad: { x: Math.round(gp.axes[2] * 1000), y: Math.round(gp.axes[3] * 1000) },
                 LeftTrigger: Math.round(gp.buttons[6].value * 1000),
-                RightTrigger: Math.round(gp.buttons[7].value * 1000)
+                RightTrigger: Math.round(gp.buttons[7].value * 1000),
+                StearingCors: {
+                    Upp: gp.buttons[12].value,
+                    Down: gp.buttons[13].value,
+                    Left: gp.buttons[14].value,
+                    Right: gp.buttons[15].value
+                }
             }
-            console.log(cd);
+            console.log(cd.StearingCors);
             sHelp.sendData(JSON.stringify(cd));
 
-        }, 1000)
+        }, 50)
 
         $(window).on("gamepaddisconnected", function () {
             console.log("disconnection event");

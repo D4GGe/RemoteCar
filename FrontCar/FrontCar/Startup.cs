@@ -13,10 +13,15 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
+using uPLibrary.Networking.M2Mqtt;
+using System.Net;
+using uPLibrary.Networking.M2Mqtt.Messages;
+
 namespace FrontCar
 {
     public class Startup
     {
+        public static MqttClient mqttClient;
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit http://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
@@ -34,6 +39,13 @@ namespace FrontCar
                 app.UseDeveloperExceptionPage();
             }
 
+             mqttClient = new MqttClient("wijken.se");
+
+            string clientId = Guid.NewGuid().ToString();
+            mqttClient.Connect(clientId);
+
+
+            
 #if NoOptions
             #region UseWebSockets
             app.UseWebSockets();
@@ -76,18 +88,26 @@ namespace FrontCar
         #region Echo
         private async Task Echo(HttpContext context, WebSocket webSocket)
         {
-            var buffer = new byte[1024 * 4];
-            WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            while (!result.CloseStatus.HasValue)
+ 
+         
+            while (webSocket.State == WebSocketState.Open)
             {
-                string stringResult = System.Text.Encoding.UTF8.GetString(buffer);
+                var token = CancellationToken.None;
+                var buffer = new ArraySegment<Byte>(new Byte[4096]);
+                var received = await webSocket.ReceiveAsync(buffer, token);
+
+                string stringResult = System.Text.Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
                 ControllerData cd = JsonConvert.DeserializeObject<ControllerData>(stringResult);
-
-               // await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
-
-                result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                string sendData = JsonConvert.SerializeObject(new CarBackData
+                {
+                    Stearing = cd.LeftPad.X,
+                    Throttle = cd.RightTrigger
+                });
+                //await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
+                
+                mqttClient.Publish("/carback", Encoding.UTF8.GetBytes(sendData), MqttMsgBase.QOS_LEVEL_EXACTLY_ONCE, false);
             }
-            await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+            //await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
         }
         #endregion
     }
