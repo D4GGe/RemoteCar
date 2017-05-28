@@ -1,0 +1,7 @@
+CarBack/.DS_Store
+CarBack/.output
+CarBack/map.txt
+CarBack/main/include/user_config.local.h
+CarBack/bin
+CarBack/build
+CarBack/*.old
