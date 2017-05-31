@@ -44,10 +44,10 @@ $(document).ready(function () {
             ctx.fillStyle = 'red';
             ctx.fillRect((gp.axes[2] + 1) * 500, (gp.axes[3] + 1) * 500, 10, 10);
             var cd = {
-                LeftPad: { x: Math.round(gp.axes[0] * 1000), y: Math.round(gp.axes[1] * 1000) },
-                RightPad: { x: Math.round(gp.axes[2] * 1000), y: Math.round(gp.axes[3] * 1000) },
-                LeftTrigger: Math.round(gp.buttons[6].value * 1000),
-                RightTrigger: Math.round(gp.buttons[7].value * 1000),
+                LeftPad: { x: Math.round(gp.axes[0] * 100), y: Math.round(gp.axes[1] * 100) },
+                RightPad: { x: Math.round(gp.axes[2] * 100), y: Math.round(gp.axes[3] * 100) },
+                LeftTrigger: Math.round(gp.buttons[6].value * 100),
+                RightTrigger: Math.round(gp.buttons[7].value * 100),
                 StearingCors: {
                     Upp: gp.buttons[12].value,
                     Down: gp.buttons[13].value,
@@ -55,10 +55,11 @@ $(document).ready(function () {
                     Right: gp.buttons[15].value
                 }
             }
-            console.log(cd.StearingCors);
+            
+            console.log("Steering: ", cd.LeftPad.x, "Throttle",cd.RightTrigger-cd.LeftTrigger);
             sHelp.sendData(JSON.stringify(cd));
 
-        }, 50)
+        }, 100)
 
         $(window).on("gamepaddisconnected", function () {
             console.log("disconnection event");
