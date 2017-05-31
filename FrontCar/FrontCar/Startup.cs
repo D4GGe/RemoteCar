@@ -100,8 +100,8 @@ namespace FrontCar
                 ControllerData cd = JsonConvert.DeserializeObject<ControllerData>(stringResult);
                 string sendData = JsonConvert.SerializeObject(new CarBackData
                 {
-                    Stearing = cd.LeftPad.X,
-                    Throttle = cd.RightTrigger
+                    Steering = cd.LeftPad.X,
+                    Throttle = cd.RightTrigger - cd.LeftTrigger
                 });
                 //await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
                 
