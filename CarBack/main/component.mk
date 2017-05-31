@@ -12,9 +12,5 @@ DATETIME := $(shell date "+%Y-%b-%d_%H:%M:%S_%Z")
 COMPONENT_ADD_INCLUDEDIRS := include
 CFLAGS += -DBUID_TIME=\"$(DATETIME)\" -Wno-error=format=
 
-ifneq ("$(wildcard $(THISDIR)/include/user_config.local.h)","")
-CFLAGS += -DLOCAL_CONFIG_AVAILABLE
-endif
-
-include $(IDF_PATH)/make/component_common.mk
+#include $(IDF_PATH)/make/component_common.mk
 #include $(IDF_PATH)/make/component.mk

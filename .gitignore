@@ -5,3 +5,5 @@ CarBack/main/include/user_config.local.h
 CarBack/bin
 CarBack/build
 CarBack/*.old
+
+.vscode

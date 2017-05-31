@@ -1,16 +1,18 @@
 #include "communication.h"
 
+#include "cJSON.h"
 #include "esp_event_loop.h"
 #include "esp_wifi.h"
 
 #include "debug.h"
 #include "user_config.h"
+#include "motor.h"
 
 mqtt_settings settings = {.host = "wijken.se",
 #if defined(CONFIG_MQTT_SECURITY_ON)
-                          .port = 8883,  // encrypted
+                          .port = 8883, // encrypted
 #else
-                          .port = 1883,  // unencrypted
+                          .port = 1883, // unencrypted
 #endif
                           .client_id = "esp32-car",
                           .username = "user",
@@ -28,68 +30,89 @@ mqtt_settings settings = {.host = "wijken.se",
                           .publish_cb = publish_cb,
                           .data_cb = data_cb};
 
-void connected_cb(void* self, void* params) {
-  mqtt_client* client = (mqtt_client*)self;
+void connected_cb(void *self, void *params) {
+  mqtt_client *client = (mqtt_client *)self;
   mqtt_subscribe(client, "/carback", 0);
   mqtt_publish(client, "/carback", "howdy!", 6, 0, 0);
 }
 
-void disconnected_cb(void* self, void* params) {}
+void disconnected_cb(void *self, void *params) {}
 
-void reconnect_cb(void* self, void* params) {}
+void reconnect_cb(void *self, void *params) {}
 
-void subscribe_cb(void* self, void* params) {
+void subscribe_cb(void *self, void *params) {
   INFO("[APP] Subscribe ok, test publish msg\n");
-  mqtt_client* client = (mqtt_client*)self;
+  mqtt_client *client = (mqtt_client *)self;
   mqtt_publish(client, "/carback", "abcde", 5, 0, 0);
 }
 
-void publish_cb(void* self, void* params) {}
+void publish_cb(void *self, void *params) {}
 
-void data_cb(void* self, void* params) {
-  mqtt_client* client = (mqtt_client*)self;
-  mqtt_event_data_t* event_data = (mqtt_event_data_t*)params;
+void data_cb(void *self, void *params) {
+  void *ptr;
+  cJSON *json;
+
+  //mqtt_client *client = (mqtt_client *)self;
+  mqtt_event_data_t *event_data = (mqtt_event_data_t *)params;
 
   if (event_data->data_offset == 0) {
-    char* topic = malloc(event_data->topic_length + 1);
+    char *topic = malloc(event_data->topic_length + 1);
     memcpy(topic, event_data->topic, event_data->topic_length);
     topic[event_data->topic_length] = 0;
     INFO("[APP] Publish topic: %s\n", topic);
     free(topic);
   }
 
-  // char *data = malloc(event_data->data_length + 1);
-  // memcpy(data, event_data->data, event_data->data_length);
-  // data[event_data->data_length] = 0;
-  INFO("[APP] Publish data[%d/%d bytes]\n",
-       event_data->data_length + event_data->data_offset,
-       event_data->data_total_length);
-  // data);
+  char *data = malloc(event_data->data_length + 1);
+  memcpy(data, event_data->data, event_data->data_length);
+  data[event_data->data_length] = 0;
 
-  // free(data);
+  ptr = cJSON_Parse(data);
+  if (ptr != 0) {
+    json = ((cJSON *)ptr)->child;
+    set_throttle(json->valueint);
+    set_steering(json->next->valueint);
+
+    /*while (1) {
+    	if (strcmp(json->string, "acceleration")) {
+
+    	} else if (strcmp(json->string, "steering")) {
+    		set_steering(json->valueint);
+    	}
+    	if (json->next != 0) {
+        	json = json->next;
+    	} else {
+    		break;
+    	}
+    }*/
+  } else {
+    INFO("[MQTT INFO] Incorrect JSON received\n");
+  }
+
+  free(data);
 }
 
-static esp_err_t wifi_event_handler(void* ctx, system_event_t* event) {
+static esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
   switch (event->event_id) {
-    case SYSTEM_EVENT_STA_START:
-      ESP_ERROR_CHECK(esp_wifi_connect());
-      break;
+  case SYSTEM_EVENT_STA_START:
+    ESP_ERROR_CHECK(esp_wifi_connect());
+    break;
 
-    case SYSTEM_EVENT_STA_GOT_IP:
+  case SYSTEM_EVENT_STA_GOT_IP:
 
-      mqtt_start(&settings);
-      // Notice that, all callback will called in mqtt_task
-      // All function publish, subscribe
-      break;
-    case SYSTEM_EVENT_STA_DISCONNECTED:
-      /* This is a workaround as ESP32 WiFi libs don't currently
-      auto-reassociate. */
+    mqtt_start(&settings);
+    // Notice that, all callback will called in mqtt_task
+    // All function publish, subscribe
+    break;
+  case SYSTEM_EVENT_STA_DISCONNECTED:
+    /* This is a workaround as ESP32 WiFi libs don't currently
+    auto-reassociate. */
 
-      mqtt_stop();
-      ESP_ERROR_CHECK(esp_wifi_connect());
-      break;
-    default:
-      break;
+    mqtt_stop();
+    ESP_ERROR_CHECK(esp_wifi_connect());
+    break;
+  default:
+    break;
   }
   return ESP_OK;
 }
